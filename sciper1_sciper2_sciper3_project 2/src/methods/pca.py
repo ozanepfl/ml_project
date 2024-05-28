@@ -21,7 +21,7 @@ class PCA(object):
         self.d = d
         
         # the mean of the training data (will be computed from the training data and saved to this variable)
-        self.mean = None 
+        self.mean = None
         # the principal components (will be computed from the training data and saved to this variable)
         self.W = None
 
@@ -38,11 +38,25 @@ class PCA(object):
         Returns:
             exvar (float): explained variance of the kept dimensions (in percentage, i.e., in [0,100])
         """
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+        # Compute the mean of data
+        self.mean = np.mean(training_data, axis=0)
+        # Center the data with the mean
+        training_centered = training_data - self.mean
+        # Create the covariance matrix
+        covariance = np.cov(training_centered, rowvar=False)
+        # Compute the eigenvectors and eigenvalues. Hint: look into np.linalg.eigh()
+        eigen_values, eigen_vectors = np.linalg.eigh(covariance)
+        # Choose the top d eigenvalues and corresponding eigenvectors. 
+        # Hint: sort the eigenvalues (with corresponding eigenvectors) in decreasing order first.
+        decreasing_indices = np.argsort(eigen_values)[::-1]
+        eigen_values = eigen_values[decreasing_indices]
+        eigen_vectors = eigen_vectors[:, decreasing_indices]
+
+        self.W = eigen_vectors[:, :self.d]
+        d_biggest_egval = eigen_values[:self.d]
+
+        # Compute the explained variance
+        exvar = np.sum(d_biggest_egval) / np.sum(eigen_values) * 100
         return exvar
 
     def reduce_dimension(self, data):
@@ -54,11 +68,9 @@ class PCA(object):
         Returns:
             data_reduced (array): reduced data of shape (N,d)
         """
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+        # project the data using W
+        data_centered = data - self.mean
+        data_reduced = data_centered @ self.W
         return data_reduced
         
 

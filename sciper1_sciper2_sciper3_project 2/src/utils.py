@@ -112,3 +112,19 @@ def mse_fn(pred,gt):
     loss = (pred-gt)**2
     loss = np.mean(loss)
     return loss
+
+def accuracy(x, y):
+        """ Accuracy.
+
+        Args:
+            x (torch.Tensor of float32): Predictions (logits), shape (B, C), B is
+                batch size, C is num classes.
+            y (torch.Tensor of int64): GT labels, shape (B, ),
+                B = {b: b \in {0 .. C-1}}.
+
+        Returns:
+            Accuracy, in [0, 1].
+        """
+        x = x.detach().cpu().numpy()
+        y = y.detach().cpu().numpy()
+        return np.mean(np.argmax(x, axis=1) == y)

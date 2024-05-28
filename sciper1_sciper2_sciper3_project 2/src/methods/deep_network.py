@@ -2,8 +2,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import TensorDataset, DataLoader
-
+from src.utils import accuracy
+import numpy as np
 ## MS2
+
+activation_fun = {
+    0: nn.ReLU(),
+    1: nn.Sigmoid(),
+    2: nn.Tanh(),
+    3: nn.GELU(),
+    4: nn.ELU(),
+    5: nn.CELU(),
+    6: nn.SELU(),
+    7: nn.PReLU(),
+    8: nn.RReLU(),
+    9: nn.ReLU6(),
+    10: nn.LeakyReLU()
+}
 
 
 class MLP(nn.Module):
@@ -68,9 +83,11 @@ class CNN(nn.Module):
             n_classes (int): number of classes to predict (output)
         """
         super(CNN, self).__init__()
-        self.conv2d1 = nn.Conv2d(input_channels, filters[0])
-        self.conv2d2 = nn.Conv2d(filter[0], filters[1])
-        self.fc1 = nn.Linear(100, n_classes)
+        self.conv2d1 = nn.Conv2d(input_channels, filters[0], 3, padding=1)
+        self.conv2d2 = nn.Conv2d(filters[0], filters[1], 3, padding=1)
+        self.conv2d3 = nn.Conv2d(filters[1], filters[2], 3, padding=1)
+        self.fc1 = nn.Linear(filters[2]*3*3, 120)
+        self.fc2 = nn.Linear(120, n_classes)
         
 
     def forward(self, x):
@@ -83,12 +100,12 @@ class CNN(nn.Module):
             preds (tensor): logits of predictions of shape (N, C)
                 Reminder: logits are value pre-softmax.
         """
-        x = F.max_pool2d(F.relu(self.conv2d1(x)), 3)
-        x = F.max_pool2d(F.relu(self.conv2d2(x)), 3)
+        x = F.max_pool2d(F.relu(self.conv2d1(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv2d2(x)), 2)
+        x = F.max_pool2d(F.relu(self.conv2d3(x)), 2)
         x = x.flatten(-3)
         x = F.relu(self.fc1(x))
-        preds = self.fc2(x)
-        return preds
+        return self.fc2(x)
 
 
 class MyViT(nn.Module):
@@ -166,6 +183,7 @@ class Trainer(object):
 
             ### WRITE YOUR CODE HERE if you want to do add something else at each epoch
 
+
     def train_one_epoch(self, dataloader, ep):
         """
         Train the model for ONE epoch.
@@ -177,7 +195,6 @@ class Trainer(object):
             dataloader (DataLoader): dataloader for training data
         """
         self.model.train()
-
         for index, batch in enumerate(dataloader):
             # x contains input features i.e. images 
             # y contains the corresponding labels i.e. targets  
@@ -187,7 +204,7 @@ class Trainer(object):
             logits = self.model(x)
 
             # computes the loss using the criterion function 
-            loss = self.criterion(logits, y)
+            loss = self.criterion(logits, y.long())
 
             # performs the backpropagation to compute the gradients of the loss w.r.t. model's parameters 
             torch.autograd.backward(loss)
@@ -198,9 +215,11 @@ class Trainer(object):
             #zeros out the gradients in the optimizer to prevent from accumulation from multiple batches 
             self.optimizer.zero_grad()
 
-            print('\rEp {}/{}, it {}/{}: loss train: {:.2f}, accuracy train: {:.2f}'.
-                  format(ep + 1, self.epochs, index + 1, len(dataloader)), loss, end='')
-
+            print('\rEp {}/{}, index {}/{}: loss train: {:.2f}, accuracy train: {:.2f}'.
+                  format(ep + 1, self.epochs, index + 1, len(dataloader), loss,
+                         accuracy(logits, y)), end='')
+        print()
+            
 
 
     def predict_torch(self, dataloader):
@@ -221,15 +240,17 @@ class Trainer(object):
                 with N the number of data points in the validation/test data.
         """
 
+        
         pred_labels = [] 
         # are batch.size and x.shape[0] same ???? 
         # puts the model in evaluation mode 
         self.model.eval()
         with torch.no_grad(): 
-            for index, batch in enumerate(dataloader): 
-                x, y = batch
-                pred_labels.append(self.model(x))
-        return pred_labels
+            for batch in dataloader: 
+                x = batch[0]
+                maximum_pred = torch.argmax(self.model(x), dim=1)
+                pred_labels.append(maximum_pred)
+        return torch.cat(pred_labels)
     
     def fit(self, training_data, training_labels):
         """
