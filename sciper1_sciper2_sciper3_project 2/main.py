@@ -83,7 +83,9 @@ def main(args):
     # Note: you might need to reshape the data depending on the network you use!
     n_classes = get_n_classes(ytrain)
     if args.nn_type == "mlp":
-        model = MLP(xtrain.shape[1], n_classes, ytrain) ### WRITE YOUR CODE HERE
+        model = MLP(xtrain.shape[1], n_classes,
+                    hidden_units=args.hidden_units,
+                    activations=args.activations)
 
     if args.nn_type == "cnn": 
         input_channel = 1 #grey scaled
@@ -147,6 +149,9 @@ if __name__ == '__main__':
     parser.add_argument('--test', action="store_true",
                         help="train on whole training data and evaluate on the test data, otherwise use a validation set")
 
+    # extra arguments for MLP
+    parser.add_argument('--hidden_units', type=int, default=[128], nargs='+', help="size of each layer (input and output layer are excluded)")
+    parser.add_argument('--activations', type=int, default=[0], nargs='+', help="activation function/s to be used in each layer")
 
     # "args" will keep in memory the arguments and their values,
     # which can be accessed as "args.data", for example.

@@ -10,14 +10,6 @@ activation_fun = {
     0: nn.ReLU(),
     1: nn.Sigmoid(),
     2: nn.Tanh(),
-    3: nn.GELU(),
-    4: nn.ELU(),
-    5: nn.CELU(),
-    6: nn.SELU(),
-    7: nn.PReLU(),
-    8: nn.RReLU(),
-    9: nn.ReLU6(),
-    10: nn.LeakyReLU()
 }
 
 
@@ -28,7 +20,7 @@ class MLP(nn.Module):
     It should not use any convolutional layers.
     """
 
-    def __init__(self, input_size, n_classes):
+    def __init__(self, input_size, n_classes, hidden_units=None, activations=None):
         """
         Initialize the network.
         
@@ -38,13 +30,37 @@ class MLP(nn.Module):
         Arguments:
             input_size (int): size of the input
             n_classes (int): number of classes to predict
+            hidden_units (list of int): each entry represents the number
+                                        of hidden units in the respective layer
+            activations (int): key of the activation function from the dictionary activation_fun
         """
         super().__init__()
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+
+        if hidden_units is None:
+            hidden_units = [128]
+        if activations is None:
+            activations = [0]
+
+        # Check the number of layers and number of activation functions chosen
+        # If there is only one activation function, then it is used for all layers
+        if len(activations) == 1 and len(hidden_units) > 1:
+            activations = activations * len(hidden_units)
+
+        assert len(activations) == len(hidden_units), "Each hidden layer must have a corresponding activation function."
+
+        self.layers_without_act = nn.ModuleList()
+
+        self.activations = activations
+
+        # Create the layers with the info
+        prev_size = input_size
+
+        for size in hidden_units:
+            self.layers_without_act.append(nn.Linear(prev_size, size))
+            prev_size = size
+
+        # Output layer
+        self.output_layer = nn.Linear(prev_size, n_classes)
 
     def forward(self, x):
         """
@@ -56,12 +72,14 @@ class MLP(nn.Module):
             preds (tensor): logits of predictions of shape (N, C)
                 Reminder: logits are value pre-softmax.
         """
-        ##
-        ###
-        #### WRITE YOUR CODE HERE!
-        ###
-        ##
+        x = x.view(x.size(0), -1)
+        for layer, activation in zip(self.layers_without_act, self.activations):
+            x = activation_fun[activation](layer(x))
+
+        # Output layer without activation
+        preds = self.output_layer(x) 
         return preds
+
 
 
 class CNN(nn.Module):
