@@ -38,24 +38,30 @@ class PCA(object):
         Returns:
             exvar (float): explained variance of the kept dimensions (in percentage, i.e., in [0,100])
         """
-        # Compute the mean of data
+        # the mean of data
         self.mean = np.mean(training_data, axis=0)
-        # Center the data with the mean
+
+        # ceenter the data with the mean
         training_centered = training_data - self.mean
-        # Create the covariance matrix
+
+        # the covariance matrix
         covariance = np.cov(training_centered, rowvar=False)
-        # Compute the eigenvectors and eigenvalues. Hint: look into np.linalg.eigh()
+
+        # the eigenvalues and eigenvectors of the covariance matrix
         eigen_values, eigen_vectors = np.linalg.eigh(covariance)
-        # Choose the top d eigenvalues and corresponding eigenvectors. 
-        # Hint: sort the eigenvalues (with corresponding eigenvectors) in decreasing order first.
+
+        # choose the greatest d eigenvalues and their corresponding eigenvectors
+        # we first sort them into decreasing order 
         decreasing_indices = np.argsort(eigen_values)[::-1]
         eigen_values = eigen_values[decreasing_indices]
         eigen_vectors = eigen_vectors[:, decreasing_indices]
 
+        # store the value of W, which are the corresponding eigenvectors
         self.W = eigen_vectors[:, :self.d]
+        # the biggest d eigenvalues (bigger variance)
         d_biggest_egval = eigen_values[:self.d]
 
-        # Compute the explained variance
+        # the explained variance in percentage
         exvar = np.sum(d_biggest_egval) / np.sum(eigen_values) * 100
         return exvar
 
