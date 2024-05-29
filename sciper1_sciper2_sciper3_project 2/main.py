@@ -8,6 +8,7 @@ from src.data import load_data
 from src.methods.pca import PCA
 from src.methods.deep_network import MLP, CNN, Trainer, MyViT
 from src.utils import normalize_fn, append_bias_term, accuracy_fn, macrof1_fn, get_n_classes
+import time
 np.random.seed(100)
 
 def main(args):
@@ -103,12 +104,17 @@ def main(args):
 
 
     ## 4. Train and evaluate the method
+    # Runtime analysis
+    s1 = time.time()
 
     # Fit (:=train) the method on the training data
     preds_train = method_obj.fit(xtrain, ytrain)
 
     # Predict on unseen data
     preds = method_obj.predict(xtest)
+
+    # Measure training and test time
+    s2 = time.time()
 
     ## Report results: performance on train and valid/test sets
     acc = accuracy_fn(preds_train, ytrain)
@@ -121,6 +127,9 @@ def main(args):
     acc = accuracy_fn(preds, y_test)
     macrof1 = macrof1_fn(preds, y_test)
     print(f"Validation set:  accuracy = {acc:.3f}% - F1-score = {macrof1:.6f}")
+
+    # Report running time
+    print(f"Time spent = {s2-s1:.10f}s")
 
 
     ### WRITE YOUR CODE HERE if you want to add other outputs, visualization, etc.
@@ -148,7 +157,7 @@ if __name__ == '__main__':
     parser.add_argument('--test', action="store_true",
                         help="train on whole training data and evaluate on the test data, otherwise use a validation set")
 
-    # extra arguments for MLP
+    # Extra arguments for MLP
     parser.add_argument('--hidden_units', type=int, default=[128], nargs='+', help="size of each layer (input and output layer are excluded)")
     parser.add_argument('--activations', type=int, default=[0], nargs='+', help="activation function/s to be used in each layer")
 
